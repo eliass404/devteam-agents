@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevTeam AI v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080910;--surf:#0f1117;--surf2:#161923;--surf3:#1e2230;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#e2e0ed;--muted:#5a5870;--muted2:#8a8899;
+  --manager:#FF6B35;--accent:#7c6aff;--green:#4ade80;--red:#f87171;--amber:#fbbf24;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);height:100vh;overflow:hidden}
+#root{display:flex;height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:280px;min-width:280px;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.brand{padding:18px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.brand-name{font-size:17px;font-weight:800;letter-spacing:-.5px}
+.brand-name em{color:var(--manager);font-style:normal}
+.brand-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px}
+.tab-bar{display:flex;padding:8px;gap:4px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:6px 4px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;transition:.15s}
+.tab.on{background:var(--surf3);color:var(--text)}
+.side-scroll{flex:1;overflow-y:auto;padding:6px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* agent rows */
+.agent-row{border-radius:8px;margin-bottom:2px;overflow:hidden;border:1px solid transparent;transition:.15s}
+.agent-row.open{border-color:var(--border2);background:var(--surf2)}
+.agent-hdr{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;user-select:none}
+.agent-hdr:hover{background:var(--surf2);border-radius:8px}
+.adot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.agent-name{font-family:var(--mono);font-size:11px;font-weight:600;flex:1}
+.agent-count{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--surf3);padding:2px 7px;border-radius:10px}
+.chevron{font-size:9px;color:var(--muted);transition:.2s;margin-left:4px}
+.agent-row.open .chevron{transform:rotate(90deg)}
+.skills-list{padding:0 6px 6px 26px}
+.skill-btn{display:block;width:100%;text-align:left;padding:5px 8px;border-radius:6px;border:none;background:transparent;color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;transition:.12s;line-height:1.4}
+.skill-btn:hover{background:var(--surf3);color:var(--text)}
+.skill-btn.active{background:rgba(124,106,255,.2);color:var(--accent)}
+
+/* session list */
+.sess-item{padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:2px;transition:.12s}
+.sess-item:hover{background:var(--surf2);border-color:var(--border)}
+.sess-goal{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess-meta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+
+/* current session tag */
+.sess-tag{padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0}
+.sess-label{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.sess-id{font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:2px;word-break:break-all}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;background:var(--surf)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.top-title{flex:1;font-size:13px;font-weight:600}
+.mode-pill{display:flex;background:var(--surf2);border-radius:8px;padding:3px;border:1px solid var(--border);gap:2px}
+.mpill{padding:4px 12px;border-radius:6px;border:none;background:transparent;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:.12s}
+.mpill.on{background:var(--accent);color:#fff}
+.mpill.manager-on{background:var(--manager);color:#fff}
+
+/* output */
+.output{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:14px}
+.welcome h1{font-size:36px;font-weight:800}.welcome h1 em{color:var(--manager);font-style:normal}
+.welcome p{color:var(--muted2);font-size:13px;max-width:520px;line-height:1.7}
+.stats{display:flex;gap:20px;margin-top:4px}
+.stat{background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent)}
+.stat-l{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.stat-n.m{color:var(--manager)}
+
+/* cards */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.card-hdr{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--surf2);border-bottom:1px solid var(--border)}
+.card-agent{font-family:var(--mono);font-size:11px;font-weight:600}
+.card-skill{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:2px}
+.card-skill::before{content:"›";margin-right:4px}
+.card-time{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto}
+.card-body{padding:14px;font-family:var(--mono);font-size:12px;line-height:1.8;color:#c8c5d8;white-space:pre-wrap;overflow-x:auto;max-height:400px;overflow-y:auto}
+
+/* manager card special */
+.card.manager-card{border-color:rgba(255,107,53,.25)}
+.card.manager-card .card-hdr{background:rgba(255,107,53,.1);border-bottom-color:rgba(255,107,53,.2)}
+
+/* thinking */
+.thinking{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.dots{display:flex;gap:4px}
+.dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:dot .8s infinite}
+.dots span:nth-child(2){animation-delay:.15s}
+.dots span:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.thlabel{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* input area */
+.input-area{border-top:1px solid var(--border);padding:14px 20px;background:var(--surf);flex-shrink:0}
+.input-meta{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.sel{background:var(--surf2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:7px;outline:none;cursor:pointer}
+.sel:focus{border-color:var(--accent)}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.prompt{flex:1;background:var(--surf2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:10px 12px;border-radius:10px;resize:none;outline:none;line-height:1.6;min-height:42px;max-height:120px}
+.prompt:focus{border-color:var(--accent)}
+.prompt::placeholder{color:var(--muted)}
+.send{width:42px;height:42px;border-radius:10px;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0;font-weight:bold}
+.send.pipeline{background:var(--manager);color:#fff}
+.send.direct{background:var(--accent);color:#fff}
+.send:hover{opacity:.85;transform:translateY(-1px)}
+.send:disabled{opacity:.3;cursor:not-allowed;transform:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const AGENT_META = {
+  manager:        { color:"#FF6B35", skills:[] },
+  architect:      { color:"#3498db", skills:["system_design","write_adr","write_rfc","api_contract","database_design","capacity_planning","microservices_split","tech_stack_audit"] },
+  coder:          { color:"#00bcd4", skills:["write_feature","write_rest_api","write_crud","write_auth","write_tests_unit","refactor","write_websocket","write_cli_tool","write_worker","write_sdk"] },
+  reviewer:       { color:"#f39c12", skills:["full_review","security_review","performance_review","pr_review","dead_code_analysis","complexity_analysis","dependency_audit","api_contract_review"] },
+  tester:         { color:"#27ae60", skills:["write_unit_tests","write_integration_tests","write_e2e_tests","write_load_tests","write_fuzz_tests","write_api_tests","test_plan","regression_suite"] },
+  debugger:       { color:"#e74c3c", skills:["root_cause_analysis","fix_bug","crash_analysis","memory_leak_hunt","race_condition_hunt","performance_debug","incident_postmortem"] },
+  security:       { color:"#FF4444", skills:["owasp_audit","threat_model","pentest_api","injection_audit","secrets_audit","auth_audit","dependency_cve_scan","cors_csp_audit","encryption_audit"] },
+  api_tester:     { color:"#20B2AA", skills:["endpoint_test_suite","contract_testing","auth_flow_test","data_exposure_audit","rate_limit_test","websocket_test","graphql_audit"] },
+  optimizer:      { color:"#00CED1", skills:["algo_optimize","db_query_optimize","caching_strategy","bundle_optimize","memory_optimize","react_optimize","api_latency_optimize","infra_cost_optimize"] },
+  db_agent:       { color:"#9370DB", skills:["schema_design","write_migration","query_optimization","redis_design","orm_models","mongodb_design","db_seed","backup_recovery"] },
+  ui_designer:    { color:"#FF69B4", skills:["design_component","design_system","design_dashboard","design_form","design_landing_page","responsive_layout","animation_design"] },
+  ux_agent:       { color:"#FF8C00", skills:["user_flow","accessibility_audit","ux_heuristic_review","onboarding_design","error_ux","copy_writing","mobile_ux"] },
+  context_manager:{ color:"#95a5a6", skills:["summarize_session","detect_contradictions","extract_decisions","scope_check","handoff_brief","requirements_check"] },
+  memory_agent:   { color:"#FFD700", skills:["summarize_memory","extract_patterns","build_knowledge_base","recall_relevant","compare_sessions","generate_readme"] },
+  devops:         { color:"#48CAE4", skills:["write_dockerfile","ci_cd_pipeline","kubernetes_manifests","terraform_infra","monitoring_setup","secrets_management","zero_downtime_deploy","log_management"] },
+};
+
+const TOTAL_SKILLS = Object.values(AGENT_META).reduce((s,a)=>s+a.skills.length,0);
+const AGENT_NAMES = Object.keys(AGENT_META).filter(a=>a!=="manager");
+
+function Dot({name,size=8}){
+  return <span style={{display:"inline-block",width:size,height:size,borderRadius:"50%",background:AGENT_META[name]?.color||"#666",flexShrink:0}}/>;
+}
+
+function AgentSidebar({ selectedAgent, selectedSkill, onSelect, onSkillSelect }) {
+  const [open, setOpen] = useState({});
+  const toggle = (n) => setOpen(p=>({...p,[n]:!p[n]}));
+
+  return (
+    <>
+      {AGENT_NAMES.map(name => {
+        const meta = AGENT_META[name];
+        const isOpen = open[name];
+        return (
+          <div key={name} className={`agent-row${isOpen?" open":""}`}>
+            <div className="agent-hdr" onClick={()=>toggle(name)}>
+              <Dot name={name} />
+              <span className="agent-name" style={{color: selectedAgent===name ? meta.color : undefined}}>{name}</span>
+              <span className="agent-count">{meta.skills.length}</span>
+              <span className="chevron">▶</span>
+            </div>
+            {isOpen && (
+              <div className="skills-list">
+                {meta.skills.map(sk => (
+                  <button key={sk} className={`skill-btn${selectedAgent===name&&selectedSkill===sk?" active":""}`}
+                    onClick={()=>{ onSelect(name); onSkillSelect(sk); }}>
+                    {sk}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function MsgCard({ agent, skill, message, timestamp }) {
+  const meta = AGENT_META[agent] || { color:"#666" };
+  const isManager = agent === "manager";
+  return (
+    <div className={`card${isManager?" manager-card":""}`}>
+      <div className="card-hdr">
+        <Dot name={agent} />
+        <span className="card-agent" style={{color:meta.color}}>{agent}</span>
+        {skill && <span className="card-skill">{skill}</span>}
+        <span className="card-time">{new Date(timestamp).toLocaleTimeString()}</span>
+      </div>
+      <div className="card-body">{message}</div>
+    </div>
+  );
+}
+
+function Thinking({ agent, skill }) {
+  const meta = AGENT_META[agent] || { color:"#666" };
+  return (
+    <div className="thinking">
+      <Dot name={agent} />
+      <span className="thlabel" style={{color:meta.color}}>{agent}{skill ? `:${skill}` : ""}</span>
+      <div className="dots"><span/><span/><span/></div>
+      <span className="thlabel">thinking...</span>
+    </div>
+  );
+}
+
+function App() {
+  const [messages, setMessages] = useState([]);
+  const [thinking, setThinking] = useState(null);
+  const [mode, setMode] = useState("pipeline"); // pipeline | direct
+  const [agent, setAgent] = useState("coder");
+  const [skill, setSkill] = useState("write_feature");
+  const [input, setInput] = useState("");
+  const [running, setRunning] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [sideTab, setSideTab] = useState("agents");
+  const wsRef = useRef(null);
+  const outRef = useRef(null);
+
+  useEffect(() => { fetchSessions(); connect(); return ()=>wsRef.current?.close(); }, []);
+  useEffect(() => { outRef.current?.scrollTo(0, outRef.current.scrollHeight); }, [messages, thinking]);
+
+  function connect() {
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = e => {
+      const d = JSON.parse(e.data);
+      if (d.type === "update") {
+        if (d.isFinal) {
+          setThinking(null);
+          setMessages(p=>[...p,{agent:d.agent,skill:d.skill,message:d.message,timestamp:d.timestamp}]);
+        } else { setThinking({agent:d.agent,skill:d.skill}); }
+      } else if (d.type === "done") {
+        setThinking(null); setRunning(false);
+        if (d.result?.sessionId) { setSessionId(d.result.sessionId); fetchSessions(); }
+      } else if (d.type === "error") {
+        setThinking(null); setRunning(false);
+        setMessages(p=>[...p,{agent:"manager",skill:null,message:"❌ Error: "+d.message,timestamp:Date.now()}]);
+      }
+    };
+    ws.onclose = () => setTimeout(connect, 2000);
+    wsRef.current = ws;
+  }
+
+  async function fetchSessions() {
+    try { const r = await fetch("/api/sessions"); setSessions(await r.json()); } catch {}
+  }
+
+  function send() {
+    if (!input.trim()||running||!wsRef.current) return;
+    setRunning(true);
+    setMessages(p=>[...p,{agent:"user",skill:null,message:input,timestamp:Date.now()}]);
+    const msg = mode==="pipeline"
+      ? { type:"run", goal:input, sessionId }
+      : { type:"direct", agent, skill, task:input, sessionId };
+    wsRef.current.send(JSON.stringify(msg));
+    setInput("");
+  }
+
+  function onKey(e) { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} }
+
+  const hasMsg = messages.length > 0;
+
+  return (
+    <div id="root">
+      {/* SIDEBAR */}
+      <div className="sidebar">
+        <div className="brand">
+          <div className="brand-name">Dev<em>Team</em>.AI <span style={{fontSize:11,color:"var(--muted)",fontFamily:"var(--mono)"}}>v2</span></div>
+          <div className="brand-sub">Manager · 14 Agents · {TOTAL_SKILLS} Skills</div>
+        </div>
+
+        <div className="tab-bar">
+          {["agents","sessions"].map(t=>(
+            <button key={t} className={`tab${sideTab===t?" on":""}`} onClick={()=>setSideTab(t)}>{t}</button>
+          ))}
+        </div>
+
+        <div className="side-scroll">
+          {sideTab==="agents" ? (
+            <AgentSidebar
+              selectedAgent={agent} selectedSkill={skill}
+              onSelect={a=>{ setAgent(a); setMode("direct"); }}
+              onSkillSelect={s=>{ setSkill(s); setMode("direct"); }}
+            />
+          ) : (
+            <>
+              {sessions.length===0 && <div style={{padding:12,fontSize:12,color:"var(--muted)"}}>No sessions yet</div>}
+              {sessions.map(s=>(
+                <div key={s.id} className="sess-item" onClick={()=>{setSessionId(s.id);setMessages([{agent:"manager",skill:null,message:`📂 Resumed: ${s.goal}`,timestamp:Date.now()}]);}}>
+                  <div className="sess-goal">{s.goal}</div>
+                  <div className="sess-meta">{s.id} · {new Date(s.created_at).toLocaleDateString()}</div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+
+        {sessionId && (
+          <div className="sess-tag">
+            <div className="sess-label">SESSION</div>
+            <div className="sess-id">{sessionId}</div>
+          </div>
+        )}
+      </div>
+
+      {/* MAIN */}
+      <div className="main">
+        <div className="topbar">
+          <div className="status-dot"/>
+          <div className="top-title">
+            {mode==="pipeline"
+              ? <span><span style={{color:"var(--manager)"}}>●</span> Manager Pipeline — Full Team</span>
+              : <span><span style={{color:AGENT_META[agent]?.color}}>●</span> {agent} <span style={{color:"var(--muted)"}}>›</span> {skill}</span>
+            }
+          </div>
+          <div className="mode-pill">
+            <button className={`mpill${mode==="pipeline"?" manager-on":""}`} onClick={()=>setMode("pipeline")}>⚡ Manager</button>
+            <button className={`mpill${mode==="direct"?" on":""}`} onClick={()=>setMode("direct")}>🎯 Direct</button>
+          </div>
+        </div>
+
+        <div className="output" ref={outRef}>
+          {!hasMsg ? (
+            <div className="welcome">
+              <h1>Dev<em>Team</em>.AI</h1>
+              <p>The Manager coordinates 14 specialized agents with 107 skills. Describe a goal and the Manager plans the execution, routes tasks to the right agents, chains outputs, and synthesizes results.</p>
+              <div className="stats">
+                <div className="stat"><div className="stat-n m">1</div><div className="stat-l">Manager</div></div>
+                <div className="stat"><div className="stat-n">14</div><div className="stat-l">Agents</div></div>
+                <div className="stat"><div className="stat-n">{TOTAL_SKILLS}</div><div className="stat-l">Skills</div></div>
+              </div>
+            </div>
+          ) : messages.map((m,i)=>(
+            <MsgCard key={i} agent={m.agent} skill={m.skill} message={m.message} timestamp={m.timestamp}/>
+          ))}
+          {thinking && <Thinking agent={thinking.agent} skill={thinking.skill}/>}
+        </div>
+
+        <div className="input-area">
+          <div className="input-meta">
+            {mode==="direct" && (
+              <>
+                <select className="sel" value={agent} onChange={e=>{setAgent(e.target.value);setSkill(AGENT_META[e.target.value]?.skills[0]||"");}}>
+                  {AGENT_NAMES.map(a=><option key={a} value={a}>{a}</option>)}
+                </select>
+                <select className="sel" value={skill} onChange={e=>setSkill(e.target.value)}>
+                  {(AGENT_META[agent]?.skills||[]).map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
+              </>
+            )}
+          </div>
+          <div className="input-row">
+            <textarea className="prompt" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={onKey}
+              placeholder={mode==="pipeline"?"Describe what you want to build — the Manager will plan and route everything...":
+                `Task for ${agent} › ${skill}...`}
+              rows={1} disabled={running}/>
+            <button className={`send ${mode==="pipeline"?"pipeline":"direct"}`} onClick={send} disabled={running||!input.trim()}>
+              {running?"⏳":"↑"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
